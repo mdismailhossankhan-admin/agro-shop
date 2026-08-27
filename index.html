@@ -38,7 +38,7 @@ textarea:focus,input:focus,select:focus{border-color:var(--p);box-shadow:0 0 0 3
 .empty{padding:25px;text-align:center;color:var(--muted)}.toast{position:fixed;right:12px;bottom:12px;z-index:500;background:#212529;color:#fff;padding:11px 14px;border-radius:9px;display:none;max-width:90vw}.toast.show{display:block}.mobile-nav{display:none}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.dashboard{grid-template-columns:repeat(2,1fr)}.filter-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.app{padding:7px 7px 75px}.header{top:4px;padding:11px 12px;border-radius:12px}.brand h1{font-size:16px}.brand p{font-size:9px}.header-actions .icon-btn{padding:7px}.layout{margin-top:9px}.panel{padding:11px}textarea{min-height:215px}.actions{gap:7px}.btn{padding:9px;font-size:12px}.dashboard{gap:6px;margin:9px 0}.stat{padding:9px}.stat b{font-size:17px}.preview{justify-content:flex-start}.invoice-card{transform-origin:top left}.search-row{grid-template-columns:1fr}.filter-grid{grid-template-columns:1fr 1fr}.backup-grid{grid-template-columns:1fr}.history-item{grid-template-columns:auto 1fr}.history-actions{grid-column:2}.mobile-nav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);z-index:100;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}.mobile-nav button{border:0;background:none;color:var(--muted);font-size:10px;font-weight:700;padding:4px}.mobile-nav button.active{color:var(--p)}}
-@media print{@page{size:A5 portrait;margin:0!important}html,body{width:148mm;height:210mm;margin:0!important;padding:0!important;background:#fff!important}.no-print,.header,.dashboard,.mobile-nav,.modal,.toast{display:none!important}.preview{display:block;padding:0;overflow:visible}.invoice-card{width:148mm!important;height:210mm!important;min-height:210mm!important;box-shadow:none!important;border:0!important;margin:0 auto;page-break-after:always;page-break-inside:avoid}.invoice-card:last-child{page-break-after:avoid}.header-brand-wrapper{background:#fff!important;color:#000!important;border:2px solid #000!important;box-shadow:none!important}.header-brand-title,.header-brand-subtitle{color:#000!important}.top-meta-row{background:#fff!important;padding:0!important}.top-meta-row span{border:1px solid #000!important}.address-grid{border-color:#000!important}.address-box h4{color:#000!important}.table-header{background:#fff!important;color:#000!important;border-top:1px solid #000;border-bottom:2px solid #000}.summary-section{background:#fff!important;border-color:#000!important}.total-row{color:#000!important}.page-footer{color:#000!important;border-color:#000!important}}
+@media print{@page{size:A5 portrait;margin:0!important}html,body{width:148mm;min-height:210mm;margin:0!important;padding:0!important;background:#fff!important}.no-print,.header,.dashboard,.mobile-nav,.modal,.toast{display:none!important}.preview{display:block;padding:0;overflow:visible}.invoice-card{width:148mm!important;height:210mm!important;min-height:210mm!important;box-shadow:none!important;border:0!important;margin:0!important;page-break-after:always;page-break-inside:avoid;border-radius:0!important}.invoice-card:last-child{page-break-after:avoid}.header-brand-wrapper{background:#fff!important;color:#000!important;border:2px solid #000!important;box-shadow:none!important}.header-brand-title,.header-brand-subtitle{color:#000!important}.top-meta-row{background:#fff!important;padding:0!important}.top-meta-row span{border:1px solid #000!important}.address-grid{border-color:#000!important}.address-box h4{color:#000!important}.table-header{background:#fff!important;color:#000!important;border-top:1px solid #000;border-bottom:2px solid #000}.summary-section{background:#fff!important;border-color:#000!important}.total-row{color:#000!important}.page-footer{color:#000!important;border-color:#000!important}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -150,15 +150,49 @@ function parseRaw(text){
  const calc=items.reduce((a,b)=>a+b.priceVal,0),subtotal=amount(subText)||calc;
  return{name,phone,courier,address:addr.join(' ')||'-',items,delivery,subtotal,subtotalText:subText||'৳'+enToBnNum(calc.toLocaleString('en-US'))}
 }
-function chunks(items){if(items.length<=8)return[items];let a=[],r=[...items];a.push(r.splice(0,12));while(r.length)a.push(r.splice(0,r.length<=10?r.length:14));return a}
-function renderInvoice(data,serial,date,container){
- const pages=chunks(data.items),total=pages.length;
- pages.forEach((pi,i)=>{const last=i===total-1,d=document.createElement('div');d.className='invoice-card';d.innerHTML=`<div><div class="header-brand-wrapper"><div class="header-brand-title">AGRO SHOP BD</div><div class="header-brand-subtitle">Reliable Online Shopping & Veterinary Solutions</div></div>
+function buildInvoiceCard(data,serial,date,items,pageNo,total,last){
+ const d=document.createElement('div');d.className='invoice-card';
+ d.innerHTML=`<div><div class="header-brand-wrapper"><div class="header-brand-title">AGRO SHOP BD</div><div class="header-brand-subtitle">Reliable Online Shopping & Veterinary Solutions</div></div>
  <div class="top-meta-row"><span>${esc(serial)}</span><span>${esc(data.courier||'')}</span><span>তারিখ: ${esc(enToBnNum(date))}</span></div>
  <div class="address-grid"><div class="address-box"><h4>প্রাপক (Customer):</h4><div><b>নাম:</b> ${esc(data.name)}</div><div><b>মোবাইল:</b> ${esc(enToBnNum(data.phone)||'-')}</div><div><b>ঠিকানা:</b> ${esc(data.address)}</div></div><div class="address-box sender-box"><h4>প্রেরক (Sender):</h4><div><b>Agro Shop</b></div><div>০১৪০৩১৩৯৭৬৩</div></div></div>
- <div class="table-header"><span>পণ্যের বিবরণ</span><span>মূল্য</span></div><div class="items-list">${pi.map(x=>`<div class="item-row"><span>${esc(x.name)}</span><span>${esc(x.priceText)}</span></div>`).join('')}</div>${last?`<div class="subtotal-row"><span>পণ্যের মোট মূল্য:</span><span>${esc(data.subtotalText)}</span></div>`:''}</div>
- <div>${last?`<div class="summary-section"><div class="summary-row"><span>ডেলিভারি চার্জ:</span><span>৳${enToBnNum(data.delivery.toLocaleString('en-US'))}</span></div><div class="summary-row total-row"><span>সর্বমোট:</span><span>৳${enToBnNum((data.subtotal+data.delivery).toLocaleString('en-US'))}</span></div></div>`:''}<div class="page-footer">Page ${enToBnNum(i+1)} of ${enToBnNum(total)}</div></div>`;container.appendChild(d)});
+ <div class="table-header"><span>পণ্যের বিবরণ</span><span>মূল্য</span></div><div class="items-list">${items.map(x=>`<div class="item-row"><span>${esc(x.name)}</span><span>${esc(x.priceText)}</span></div>`).join('')}</div>${last?`<div class="subtotal-row"><span>পণ্যের মোট মূল্য:</span><span>${esc(data.subtotalText)}</span></div>`:''}</div>
+ <div>${last?`<div class="summary-section"><div class="summary-row"><span>ডেলিভারি চার্জ:</span><span>৳${enToBnNum(data.delivery.toLocaleString('en-US'))}</span></div><div class="summary-row total-row"><span>সর্বমোট:</span><span>৳${enToBnNum((data.subtotal+data.delivery).toLocaleString('en-US'))}</span></div></div>`:''}<div class="page-footer">Page ${enToBnNum(pageNo)} of ${enToBnNum(total)}</div></div>`;
+ return d;
+}
+function cardFits(card){
+ document.body.appendChild(card);
+ card.style.cssText+=';position:absolute!important;left:-10000px!important;top:0!important;width:148mm!important;height:210mm!important;min-height:0!important;max-height:210mm!important;overflow:hidden!important;box-shadow:none!important;border:0!important;';
+ const fits=card.scrollHeight<=card.clientHeight+1;
+ card.remove();
+ return fits;
+}
+function paginateItems(data,serial,date){
+ const items=data.items||[];
+ if(!items.length)return[[]];
+ const pages=[];
+ let index=0;
+ while(index<items.length){
+  const remaining=items.length-index;
+  const allRemaining=items.slice(index);
+  const lastPageFits=cardFits(buildInvoiceCard(data,serial,date,allRemaining,1,1,true));
+  if(lastPageFits){pages.push(allRemaining);break}
+  let take=0;
+  for(let n=1;n<=remaining;n++){
+   const candidate=items.slice(index,index+n);
+   if(cardFits(buildInvoiceCard(data,serial,date,candidate,1,1,false)))take=n;
+   else break;
+  }
+  if(take===0)take=1;
+  pages.push(items.slice(index,index+take));
+  index+=take;
+ }
+ return pages;
+}
+function renderInvoice(data,serial,date,container){
+ const pages=paginateItems(data,serial,date),total=pages.length;
+ pages.forEach((pi,i)=>container.appendChild(buildInvoiceCard(data,serial,date,pi,i+1,total,i===total-1)));
  $('previewInfo').textContent=`${enToBnNum(total)} পৃষ্ঠা • ${enToBnNum(data.items.length)} পণ্য`;
+}
 }
 function saveRecord(serial,data,text,date){let h=getHistory();const r={serialNo:serial,courierId:data.courier,custName:data.name,custPhone:data.phone,date,rawText:text,timestamp:Date.now()};const i=h.findIndex(x=>x.serialNo===serial);if(i>=0)h[i]=r;else h.unshift(r);saveHistory(h)}
 function parseText(existingSerial=null,existingDate=null){
